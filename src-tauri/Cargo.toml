@@ -1,6 +1,6 @@
 [package]
 name = "cursor-pool"
-version = "1.8.12"
+version = "1.8.16"
 description = "Cursor Pool App"
 authors = ["Cloxl"]
 edition = "2021"
