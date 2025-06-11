@@ -94,6 +94,7 @@
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUxREEyM0MyOThBMjc3ODAKUldTQWQ2S1l3aVBhVWZsbmdKR1M5dnprMG5KbnVtV2RCWHo5ZCtIeUZKcHFXcm9WQTMrMHlrR1MK",
       "endpoints": [
         "https://pool.cursorpro.com.cn/latest.json",
+        "https://vip.123pan.cn/1831210026/tq_pool/latest.json",
         "https://github.com/maticarmy/tq_pool/releases/latest/download/latest.json",
         "https://gh-proxy.com/github.com/maticarmy/tq_pool/releases/latest/download/latest.json"
       ],

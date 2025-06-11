@@ -797,6 +797,34 @@
         return i18n.value.dashboard.cursorUnknownError
     }
   }
+
+  // 添加官方链接点击处理函数
+  const openOfficialWebsite = async () => {
+    try {
+      await open('https://cursorpro.com.cn')
+    } catch (error) {
+      Logger.error(`打开官网失败: ${error}`)
+      message.error('打开链接失败')
+    }
+  }
+
+  const openPurchaseLink = async () => {
+    try {
+      await open('https://cursorpro.com.cn/pricing')
+    } catch (error) {
+      Logger.error(`打开购买页面失败: ${error}`)
+      message.error('打开链接失败')
+    }
+  }
+
+  const openSupportLink = async () => {
+    try {
+      await open('https://cursorpro.com.cn/support')
+    } catch (error) {
+      Logger.error(`打开技术支持页面失败: ${error}`)
+      message.error('打开链接失败')
+    }
+  }
 </script>
 
 <template>
@@ -1110,6 +1138,42 @@
       </n-space>
     </n-card>
 
+    <!-- 官网和购买链接卡片 -->
+    <n-card
+      title="官方链接"
+      class="official-links-card"
+      style="user-select: none"
+    >
+      <n-space
+        justify="center"
+        :size="24"
+      >
+        <n-button
+          type="info"
+          ghost
+          style="width: 160px"
+          @click="openOfficialWebsite"
+        >
+          🌐 官方网站
+        </n-button>
+        <n-button
+          type="success"
+          style="width: 160px"
+          @click="openPurchaseLink"
+        >
+          💎 购买激活码
+        </n-button>
+        <n-button
+          type="warning"
+          ghost
+          style="width: 160px"
+          @click="openSupportLink"
+        >
+          💬 技术支持
+        </n-button>
+      </n-space>
+    </n-card>
+
     <!-- 添加 Cursor 运行提醒模态框 -->
     <cursor-running-modal
       v-model:show="showCursorRunningModal"
@@ -1172,7 +1236,7 @@
           <template v-if="appStore.currentPlatform === 'macos'">
             <n-button
               type="info"
-              @click="open('https://docs.52ai.org/troubleshooting/macos/permissions')"
+              @click="open('https://cursorpro.com.cn/docs')"
               >查看文档</n-button
             >
             <n-button
