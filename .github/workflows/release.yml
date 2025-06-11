@@ -1,0 +1,267 @@
+name: Release
+run-name: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish-tauri:
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'macos-14'
+            args: '--target aarch64-apple-darwin'
+            display_name: 'macOS-ARM64'
+          - platform: 'macos-latest'
+            args: '--target x86_64-apple-darwin'
+            display_name: 'macOS-Intel'
+          - platform: 'windows-latest'
+            args: '--target x86_64-pc-windows-msvc'
+            display_name: 'Windows-x64-Standard'
+          - platform: 'windows-latest'
+            args: '--target aarch64-pc-windows-msvc'
+            display_name: 'Windows-ARM64-Standard'
+
+    runs-on: ${{ matrix.platform }}
+    name: Build ${{ matrix.display_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Get Version (Windows)
+        if: matrix.platform == 'windows-latest'
+        id: get_version_windows
+        shell: pwsh
+        run: |
+          $VERSION = (node -p "require('./package.json').version")
+          echo "version=v$VERSION" >> $env:GITHUB_OUTPUT
+
+      - name: Get Version (Unix)
+        if: matrix.platform != 'windows-latest'
+        id: get_version_unix
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=v$VERSION" >> $GITHUB_OUTPUT
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'x86_64-apple-darwin' || matrix.platform == 'macos-14' && 'aarch64-apple-darwin' || contains(matrix.args, 'aarch64-pc-windows-msvc') && 'aarch64-pc-windows-msvc' || '' }}
+
+      - name: Install dependencies (macOS)
+        if: matrix.platform == 'macos-latest' || matrix.platform == 'macos-14'
+        run: |
+          brew install openssl@3
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.platform == 'macos-14'
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version_unix.outputs.version }}
+          name: ${{ steps.get_version_unix.outputs.version }}
+          draft: false
+          prerelease: false
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with: 
+          tagName: ${{ matrix.platform == 'windows-latest' && steps.get_version_windows.outputs.version || steps.get_version_unix.outputs.version }}
+          releaseName: ${{ matrix.platform == 'windows-latest' && steps.get_version_windows.outputs.version || steps.get_version_unix.outputs.version }}
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+          includeUpdaterJson: true
+
+  publish-webview2-fixed:
+    if: startsWith(github.ref, 'refs/tags/v')
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            target: 'x86_64-pc-windows-msvc'
+            arch: 'x64'
+            display_name: 'Windows-x64-FixedWebView2'
+          - platform: 'windows-latest'
+            target: 'aarch64-pc-windows-msvc'
+            arch: 'arm64'
+            display_name: 'Windows-ARM64-FixedWebView2'
+
+    runs-on: ${{ matrix.platform }}
+    name: Build ${{ matrix.display_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: latest
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Get Version
+        id: get_version
+        shell: pwsh
+        run: |
+          $VERSION = (node -p "require('./package.json').version")
+          echo "version=v$VERSION" >> $env:GITHUB_OUTPUT
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Prepare WebView2 Fixed Runtime
+        shell: pwsh
+        run: |
+          # Download WebView2 Runtime
+          invoke-webrequest -uri https://github.com/westinyang/WebView2RuntimeArchive/releases/download/109.0.1518.78/Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.${{ matrix.arch }}.cab -outfile Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.${{ matrix.arch }}.cab
+          
+          # Extract WebView2 Runtime to src-tauri directory
+          Expand .\Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.${{ matrix.arch }}.cab -F:* ./src-tauri
+          
+          # Create WebView2 configuration file 
+          $webviewConfigContent = @"
+          {
+            "bundle": {
+              "windows": {
+                "webviewInstallMode": {
+                  "type": "fixedRuntime",
+                  "path": "./Microsoft.WebView2.FixedVersionRuntime.109.0.1518.78.${{ matrix.arch }}/"
+                },
+                "certificateThumbprint": null,
+                "digestAlgorithm": "sha256",
+                "timestampUrl": "",
+                "nsis": {
+                  "languages": ["SimpChinese", "English"],
+                  "displayLanguageSelector": true
+                }
+              }
+            },
+            "plugins": {
+              "updater": {
+                "active": true,
+                "dialog": false,
+                "pubkey": "${{ secrets.TAURI_UPDATER_PUBKEY }}",
+                "endpoints": [
+                  "${{ secrets.WEBVIEW2_UPDATE_ENDPOINT_PRIMARY }}"
+                ],
+                "windows": {
+                  "installMode": "passive"
+                },
+                "dangerousInsecureTransportProtocol": true
+              }
+            }
+          }
+          "@
+          
+          # Save configuration file
+          New-Item -Path "src-tauri" -Name "tauri.windows.conf.json" -ItemType "file" -Value $webviewConfigContent -Force
+
+      # Build with tauri action but without uploading artifacts
+      - name: Build Tauri App 
+        id: build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          configPath: src-tauri/tauri.windows.conf.json
+          args: --target ${{ matrix.target }}
+          includeUpdaterJson: false
+
+      - name: Rename Files
+        id: rename
+        shell: pwsh
+        run: |
+          # Rename MSI files
+          $msiFiles = Get-ChildItem -Path ".\src-tauri\target\${{ matrix.target }}\release\bundle\msi\*.msi"
+          foreach ($file in $msiFiles) {
+            $newName = $file.Name -replace "\.msi$", "_fixed_webview2.msi"
+            $newPath = Join-Path -Path $file.Directory.FullName -ChildPath $newName
+            Rename-Item -Path $file.FullName -NewName $newName
+            Write-Host "Renamed: $($file.Name) -> $newName"
+          }
+
+          # Rename NSIS installer
+          $exeFiles = Get-ChildItem -Path ".\src-tauri\target\${{ matrix.target }}\release\bundle\nsis\*-setup.exe"
+          foreach ($file in $exeFiles) {
+            $newName = $file.Name -replace "-setup\.exe$", "_fixed_webview2-setup.exe"
+            Rename-Item -Path $file.FullName -NewName $newName
+            Write-Host "Renamed: $($file.Name) -> $newName"
+          }
+
+          # Rename signature files
+          $sigFiles = Get-ChildItem -Path ".\src-tauri\target\${{ matrix.target }}\release\bundle\nsis\*-setup.exe.sig"
+          foreach ($file in $sigFiles) {
+            $newName = $file.Name -replace "-setup\.exe\.sig$", "_fixed_webview2-setup.exe.sig"
+            Rename-Item -Path $file.FullName -NewName $newName
+            Write-Host "Renamed: $($file.Name) -> $newName"
+          }
+          
+          $sigFiles = Get-ChildItem -Path ".\src-tauri\target\${{ matrix.target }}\release\bundle\msi\*.msi.sig"
+          foreach ($file in $sigFiles) {
+            $newName = $file.Name -replace "\.msi\.sig$", "_fixed_webview2.msi.sig"
+            Rename-Item -Path $file.FullName -NewName $newName
+            Write-Host "Renamed: $($file.Name) -> $newName"
+          }
+
+      - name: Upload WebView2 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          name: ${{ steps.get_version.outputs.version }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            src-tauri/target/${{ matrix.target }}/release/bundle/msi/*_fixed_webview2.msi
+            src-tauri/target/${{ matrix.target }}/release/bundle/msi/*_fixed_webview2.msi.sig
+            src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*_fixed_webview2-setup.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*_fixed_webview2-setup.exe.sig
