@@ -1,7 +1,7 @@
 {
-  "version": "1.8.14",
-  "notes": "听泉Cursor Pool v1.8.14 更新\n- 新增官方链接区块，方便访问官网、购买激活码和技术支持\n- 优化用户体验和界面布局\n- 修复已知问题，提升软件稳定性",
-  "pub_date": "2025-01-11T04:17:42.197Z",
+  "version": "1.8.15",
+  "notes": "听泉Cursor Pool v1.8.15 更新\n- 修复自动更新签名验证问题\n- 优化更新检测机制\n- 提升软件稳定性和用户体验",
+  "pub_date": "2025-01-11T12:00:00.000Z",
   "platforms": {
     "darwin-aarch64": {
       "signature": "待更新",
@@ -13,11 +13,11 @@
     },
     "windows-x86_64": {
       "signature": "待更新",
-      "url": "https://vip.123pan.cn/1831210026/tq_pool/tingquancursor-pool_1.8.14_x64_zh-CN.msi"
+      "url": "https://vip.123pan.cn/1831210026/tq_pool/tingquancursor-pool_1.8.15_x64_zh-CN.msi"
     },
     "windows-aarch64": {
       "signature": "待更新",
-      "url": "https://vip.123pan.cn/1831210026/tq_pool/tingquancursor-pool_1.8.14_arm64_zh-CN.msi"
+      "url": "https://vip.123pan.cn/1831210026/tq_pool/tingquancursor-pool_1.8.15_arm64_zh-CN.msi"
     }
   }
 } 
