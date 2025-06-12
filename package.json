@@ -1,7 +1,7 @@
 {
   "name": "听泉-cursor-pool",
   "private": true,
-  "version": "1.8.31",
+  "version": "1.8.32",
   "type": "module",
   "scripts": {
     "dev": "vite",

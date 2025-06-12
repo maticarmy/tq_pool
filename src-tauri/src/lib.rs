@@ -20,6 +20,11 @@ pub mod tray;
 pub mod utils;
 
 pub fn run() {
+    // 设置更新器环境变量（确保在生产环境中正常工作）
+    if std::env::var("TAURI_ENV_DEBUG").is_err() {
+        std::env::set_var("TAURI_ENV_DEBUG", "false");
+    }
+    
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_process::init());
 

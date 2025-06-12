@@ -1,6 +1,6 @@
 [package]
 name = "tq-cursor-pool"
-version = "1.8.31"
+version = "1.8.32"
 description = "Cursor Pool App"
 authors = ["Cloxl"]
 edition = "2021"
