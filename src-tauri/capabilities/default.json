@@ -25,6 +25,8 @@
     "core:image:allow-from-path",
     "core:event:default",
     "core:event:allow-listen",
+    "core:app:default",
+    "core:app:allow-version",
     "os:default",
     "shell:default",
     "positioner:default",
