@@ -272,37 +272,37 @@ export const useUpdaterStore = defineStore('updater', () => {
         Logger.info('使用 Tauri 2.x API 进行下载安装')
         
         // Tauri 2.x API
-        await update.downloadAndInstall((event: any) => {
+      await update.downloadAndInstall((event: any) => {
           console.log('📊 [DEBUG] 下载事件:', event)
           Logger.info(`下载事件: ${JSON.stringify(event)}`)
           
-          switch (event.event) {
-            case 'Started':
-              totalBytes.value = event.data.contentLength || 0
+        switch (event.event) {
+          case 'Started':
+            totalBytes.value = event.data.contentLength || 0
               console.log(`🚀 [DEBUG] 开始下载，总大小: ${totalBytes.value} 字节`)
               Logger.info(`开始下载，总大小: ${totalBytes.value} 字节`)
-              break
+            break
 
-            case 'Progress':
-              downloadedBytes.value += event.data.chunkLength || 0
-              // 确保进度不超过100%
-              if (totalBytes.value > 0) {
-                downloadProgress.value = Math.min(
-                  Math.round((downloadedBytes.value / totalBytes.value) * 100),
-                  99, // 保留安装的1%
-                )
-              }
+          case 'Progress':
+            downloadedBytes.value += event.data.chunkLength || 0
+            // 确保进度不超过100%
+            if (totalBytes.value > 0) {
+              downloadProgress.value = Math.min(
+                Math.round((downloadedBytes.value / totalBytes.value) * 100),
+                99, // 保留安装的1%
+              )
+            }
               console.log(`📈 [DEBUG] 下载进度: ${downloadProgress.value}% (${downloadedBytes.value}/${totalBytes.value})`)
               Logger.info(`下载进度: ${downloadProgress.value}%`)
-              break
+            break
 
-            case 'Finished':
-              downloadProgress.value = 99
+          case 'Finished':
+            downloadProgress.value = 99
               console.log('✅ [DEBUG] 下载完成')
               Logger.info('下载完成')
-              break
-          }
-        })
+            break
+        }
+      })
       } else {
         console.log('🔄 [DEBUG] 使用兼容模式下载安装')
         Logger.warn('使用兼容模式进行下载安装')
