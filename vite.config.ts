@@ -56,7 +56,7 @@ export default defineConfig(async () => ({
     proxy: {
       '/api': {
        
-        target: 'https://auth.52ai.org/api',
+        target: 'https://pool.cursorpro.com.cn/api',
         changeOrigin: true,
         rewrite: path => path.replace(/^\/api/, '')
       }
