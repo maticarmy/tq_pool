@@ -41,15 +41,6 @@
     // 初始化线路配置
     await inboundStore.fetchInboundList()
 
-    // 添加调试信息（临时）
-    console.log('🚀 开始更新器兼容性测试...')
-    try {
-      const { debugUpdaterInfo } = await import('./utils/updater-test')
-      await debugUpdaterInfo()
-    } catch (error) {
-      console.error('❌ 调试工具加载失败:', error)
-    }
-
     // 自动检查更新
     await updaterStore.checkForUpdates()
 

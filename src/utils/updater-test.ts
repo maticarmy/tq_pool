@@ -26,7 +26,7 @@ export async function testUpdaterCompatibility(): Promise<UpdateCompatibilityInf
         updateData = update
       } else if (typeof update === 'object' && 'available' in update) {
         tauriVersion = '1.x'
-        updateAvailable = (update as any).available
+        updateAvailable = Boolean((update as any).available)
         updateData = update
       }
     }
