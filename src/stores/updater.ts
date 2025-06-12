@@ -41,18 +41,58 @@ export const useUpdaterStore = defineStore('updater', () => {
       const currentVersion = await app.getVersion()
       Logger.info(`当前应用版本: ${currentVersion}`)
 
+      // 添加环境信息日志
+      Logger.info(`用户代理: ${navigator.userAgent}`)
+      Logger.info(`是否为 Tauri 环境: ${typeof (window as any).__TAURI__ !== 'undefined'}`)
+      Logger.info(`当前 URL: ${window.location.href}`)
+
       // 手动获取latest.json来调试版本比较
       try {
         const response = await fetch('https://vip.123pan.cn/1831210026/tq_pool/latest.json')
         const latestInfo = await response.json()
         Logger.info(`远程latest.json版本: ${latestInfo.version}`)
         Logger.info(`版本比较: 当前${currentVersion} vs 远程${latestInfo.version}`)
+        Logger.info(`完整远程配置: ${JSON.stringify(latestInfo, null, 2)}`)
+
+        // 验证当前平台是否在配置中
+        try {
+          const { platform, arch } = await import('@tauri-apps/plugin-os')
+          const platformInfo = await platform()
+          const archInfo = await arch()
+          const expectedPlatform = `${platformInfo}-${archInfo}`
+
+          if (latestInfo.platforms && latestInfo.platforms[expectedPlatform]) {
+            Logger.info(`✅ 找到当前平台配置: ${expectedPlatform}`)
+            Logger.info(
+              `平台配置: ${JSON.stringify(latestInfo.platforms[expectedPlatform], null, 2)}`,
+            )
+          } else {
+            Logger.warn(`⚠️ 当前平台 ${expectedPlatform} 在远程配置中不存在`)
+            Logger.info(`可用平台: ${Object.keys(latestInfo.platforms || {}).join(', ')}`)
+          }
+        } catch (platErr) {
+          Logger.warn(`平台检查失败: ${platErr}`)
+        }
       } catch (fetchErr) {
         Logger.warn(`手动获取latest.json失败: ${fetchErr}`)
       }
 
       const update = await check()
-      
+
+      // 添加 Tauri 环境诊断
+      try {
+        const { platform, arch, version: tauriVersion } = await import('@tauri-apps/plugin-os')
+        const platformInfo = await platform()
+        const archInfo = await arch()
+        const tauriVer = await tauriVersion()
+
+        Logger.info(`Tauri 平台信息: ${platformInfo}-${archInfo}`)
+        Logger.info(`Tauri 版本: ${tauriVer}`)
+        Logger.info(`期望平台标识符: ${platformInfo}-${archInfo}`)
+      } catch (envErr) {
+        Logger.warn(`获取环境信息失败: ${envErr}`)
+      }
+
       // 添加详细的调试日志
       Logger.info(`更新检查原始结果: ${JSON.stringify(update)}`)
       Logger.info(`update 类型: ${typeof update}`)
@@ -113,7 +153,7 @@ export const useUpdaterStore = defineStore('updater', () => {
           'the platform `windows-x86_64` was not found on the response `platforms` object'
       ) {
         Logger.info('检测到 WebView2 平台问题，启用兼容模式')
-        
+
         hasUpdate.value = true
         isWebView2Update.value = true
         updateVersion.value = '新版本'
@@ -162,40 +202,40 @@ export const useUpdaterStore = defineStore('updater', () => {
       // 兼容不同的下载和安装方法
       if (typeof update.downloadAndInstall === 'function') {
         Logger.info('使用 Tauri 2.x API 进行下载安装')
-        
+
         // Tauri 2.x API
-      await update.downloadAndInstall((event: any) => {
+        await update.downloadAndInstall((event: any) => {
           Logger.info(`下载事件: ${JSON.stringify(event)}`)
-          
-        switch (event.event) {
-          case 'Started':
-            totalBytes.value = event.data.contentLength || 0
+
+          switch (event.event) {
+            case 'Started':
+              totalBytes.value = event.data.contentLength || 0
               Logger.info(`开始下载，总大小: ${totalBytes.value} 字节`)
-            break
+              break
 
-          case 'Progress':
-            downloadedBytes.value += event.data.chunkLength || 0
-            // 确保进度不超过100%
-            if (totalBytes.value > 0) {
-              downloadProgress.value = Math.min(
-                Math.round((downloadedBytes.value / totalBytes.value) * 100),
-                99, // 保留安装的1%
-              )
-            }
+            case 'Progress':
+              downloadedBytes.value += event.data.chunkLength || 0
+              // 确保进度不超过100%
+              if (totalBytes.value > 0) {
+                downloadProgress.value = Math.min(
+                  Math.round((downloadedBytes.value / totalBytes.value) * 100),
+                  99, // 保留安装的1%
+                )
+              }
               Logger.info(`下载进度: ${downloadProgress.value}%`)
-            break
+              break
 
-          case 'Finished':
-            downloadProgress.value = 99
+            case 'Finished':
+              downloadProgress.value = 99
               Logger.info('下载完成')
-            break
-        }
-      })
+              break
+          }
+        })
       } else {
         Logger.warn('使用兼容模式进行下载安装')
         downloadProgress.value = 50
         // 模拟下载过程
-        await new Promise(resolve => setTimeout(resolve, 1000))
+        await new Promise((resolve) => setTimeout(resolve, 1000))
         downloadProgress.value = 99
       }
 
@@ -213,7 +253,7 @@ export const useUpdaterStore = defineStore('updater', () => {
 
       // Windows会自动重启，其他平台需要手动重启
       await relaunch()
-      
+
       Logger.info('更新安装完成')
     } catch (err) {
       isDownloading.value = false
