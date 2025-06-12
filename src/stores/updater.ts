@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import { check } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { open } from '@tauri-apps/plugin-shell'
+import { app } from '@tauri-apps/api'
 import Logger from '@/utils/logger'
 
 export const useUpdaterStore = defineStore('updater', () => {
@@ -36,9 +37,28 @@ export const useUpdaterStore = defineStore('updater', () => {
 
       Logger.info('开始检查更新')
 
+      // 获取当前应用版本
+      const currentVersion = await app.getVersion()
+      Logger.info(`当前应用版本: ${currentVersion}`)
+
+      // 手动获取latest.json来调试版本比较
+      try {
+        const response = await fetch('https://vip.123pan.cn/1831210026/tq_pool/latest.json')
+        const latestInfo = await response.json()
+        Logger.info(`远程latest.json版本: ${latestInfo.version}`)
+        Logger.info(`版本比较: 当前${currentVersion} vs 远程${latestInfo.version}`)
+      } catch (fetchErr) {
+        Logger.warn(`手动获取latest.json失败: ${fetchErr}`)
+      }
+
       const update = await check()
       
-      Logger.info(`更新检查结果: ${update ? '发现更新' : '暂无更新'}`)
+      // 添加详细的调试日志
+      Logger.info(`更新检查原始结果: ${JSON.stringify(update)}`)
+      Logger.info(`update 类型: ${typeof update}`)
+      Logger.info(`update 是否为null: ${update === null}`)
+      Logger.info(`update 是否为undefined: ${update === undefined}`)
+      Logger.info(`update ? '发现更新' : '暂无更新': ${update ? '发现更新' : '暂无更新'}`)
 
       // 兼容 Tauri 1.x 和 2.x 的 API
       let hasUpdateAvailable = false
@@ -46,10 +66,12 @@ export const useUpdaterStore = defineStore('updater', () => {
 
       if (update) {
         Logger.info('检测到更新对象，开始解析更新信息')
+        Logger.info(`update对象的所有属性: ${Object.keys(update).join(', ')}`)
 
         // 检查是否为 Tauri 2.x 的 Update 对象（直接存在 version 属性）
         if (typeof update === 'object' && 'version' in update) {
           Logger.info('使用 Tauri 2.x API 格式')
+          Logger.info(`发现版本信息: ${(update as any).version}`)
           hasUpdateAvailable = true
           updateData = update
         }
@@ -60,6 +82,7 @@ export const useUpdaterStore = defineStore('updater', () => {
           updateData = update
         } else {
           Logger.warn(`未知的更新对象格式: ${JSON.stringify(update)}`)
+          Logger.warn(`对象属性列表: ${Object.keys(update).join(', ')}`)
         }
       } else {
         Logger.info('当前已是最新版本')
