@@ -48,3 +48,8 @@ DEBUG.md
 # ESLint and Prettier cache files
 .eslintcache
 .prettierrc.cache
+
+# Tauri signing keys (private keys should not be committed)
+*.key
+tauri-*.key
+!*.key.pub
