@@ -3,6 +3,7 @@ import MainLayout from '../layouts/MainLayout.vue'
 import DashboardView from '../views/DashboardView.vue'
 import HistoryAccountsView from '../views/HistoryAccountsView.vue'
 import HistoryView from '../views/HistoryView.vue'
+import SettingsView from '../views/SettingsView.vue'
 
 const routes = [
   {
@@ -31,7 +32,7 @@ const routes = [
       {
         path: 'settings',
         name: 'settings',
-        component: () => import('../views/SettingsView.vue'),
+        component: SettingsView,
       },
     ],
   },

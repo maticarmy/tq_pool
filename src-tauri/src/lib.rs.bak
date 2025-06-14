@@ -65,9 +65,9 @@ pub fn run() {
                 log_dir,
                 console_output: true,
                 log_level: if cfg!(debug_assertions) {
-                    "debug,hyper=off,reqwest=off,tauri_plugin_updater=off".to_string()
+                    "debug,hyper=off,reqwest=off".to_string()
                 } else {
-                    "info,hyper=off,reqwest=off,tauri_plugin_updater=off".to_string()
+                    "info,hyper=off,reqwest=off".to_string()
                 },
                 json_format: false,
             };

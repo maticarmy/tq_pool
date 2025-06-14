@@ -98,7 +98,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             api: ApiConfig {
-                default_api_url: "https://pool.cuursorpro.com.cn/api".to_string(),
+                default_api_url: "https://pool.cuursorpro.com.cn:46880/api".to_string(),
                 
                 config_file_url: "https://cursorpro.oss-cn-hongkong.aliyuncs.com/config.json".to_string(),
                 // config_file_url: "https://cursorpool.oss-cn-guangzhou.aliyuncs.com/config.json"

@@ -98,6 +98,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_ENV_DEBUG: false
+          TAURI_ENV_TARGET_TRIPLE: ${{ matrix.platform == 'macos-latest' && 'x86_64-apple-darwin' || matrix.platform == 'macos-14' && 'aarch64-apple-darwin' || contains(matrix.args, 'aarch64-pc-windows-msvc') && 'aarch64-pc-windows-msvc' || 'x86_64-pc-windows-msvc' }}
+          TAURI_ENV_PLATFORM: ${{ matrix.platform == 'macos-latest' && 'darwin' || matrix.platform == 'macos-14' && 'darwin' || 'windows' }}
+          TAURI_ENV_ARCH: ${{ matrix.platform == 'macos-latest' && 'x86_64' || matrix.platform == 'macos-14' && 'aarch64' || contains(matrix.args, 'aarch64-pc-windows-msvc') && 'aarch64' || 'x86_64' }}
+          TAURI_ENV_FAMILY: ${{ matrix.platform == 'macos-latest' && 'unix' || matrix.platform == 'macos-14' && 'unix' || 'windows' }}
         with: 
           tagName: ${{ matrix.platform == 'windows-latest' && steps.get_version_windows.outputs.version || steps.get_version_unix.outputs.version }}
           releaseName: ${{ matrix.platform == 'windows-latest' && steps.get_version_windows.outputs.version || steps.get_version_unix.outputs.version }}
@@ -213,6 +218,11 @@ jobs:
           NODE_OPTIONS: "--max_old_space_size=4096"
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          TAURI_ENV_DEBUG: false
+          TAURI_ENV_TARGET_TRIPLE: ${{ matrix.target }}
+          TAURI_ENV_PLATFORM: windows
+          TAURI_ENV_ARCH: ${{ matrix.arch == 'x64' && 'x86_64' || 'aarch64' }}
+          TAURI_ENV_FAMILY: windows
         with:
           configPath: src-tauri/tauri.windows.conf.json
           args: --target ${{ matrix.target }}
